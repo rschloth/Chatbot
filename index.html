@@ -47,7 +47,7 @@
                     </div>
                     <div>
                         <div class="bg-gray-200 p-4 rounded-lg rounded-tl-none">
-                            <p class="text-sm text-gray-800">Hello! I'm the Oberlin College Benefits Assistant. I can help answer questions about employee benefits using publicly available information from the HR website. How can I help you today?</p>
+                            <p class="text-sm text-gray-800">Hello! I'm the Oberlin College Benefits Assistant. I can answer questions about benefits for A&PS, Administrative Assistants, Confidential Staff, Continuing Faculty, Security (OCSA), and Service Employees. How can I help you?</p>
                         </div>
                     </div>
                 </div>
@@ -65,7 +65,7 @@
                 </div>
                 <div>
                     <div class="bg-gray-200 p-4 rounded-lg rounded-tl-none">
-                        <p class="text-sm text-gray-800">Searching the Oberlin College HR pages for you...</p>
+                        <p id="loading-text" class="text-sm text-gray-800">Searching my knowledge base for you...</p>
                     </div>
                 </div>
             </div>
@@ -74,7 +74,7 @@
         <!-- Input Form -->
         <div class="p-6 bg-gray-50 rounded-b-2xl border-t border-gray-200">
             <form id="chat-form" class="flex items-center gap-4">
-                <input type="text" id="user-input" placeholder="Ask about health insurance, retirement, etc." class="flex-1 w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition">
+                <input type="text" id="user-input" placeholder="e.g., 'What is vacation for Service Employees?'" class="flex-1 w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition">
                 <button type="submit" class="bg-red-800 text-white font-semibold px-6 py-3 rounded-lg hover:bg-red-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition shadow">
                     Send
                 </button>
@@ -83,72 +83,377 @@
     </div>
 
     <script type="module">
-        // Basic chatbot logic
         const chatForm = document.getElementById('chat-form');
         const userInput = document.getElementById('user-input');
         const chatContainer = document.getElementById('chat-container');
         const loadingIndicator = document.getElementById('loading-indicator');
 
-        // Store chat history to provide context to the model
         let chatHistory = [];
-
-        // Pre-defined knowledge from Oberlin's HR website
+        
+        // Structured knowledge base with separate sections for each employee class
         const knowledgeBase = {
-            "sources": [
-                "https://www.oberlin.edu/human-resources/benefits",
-                "https://www.oberlin.edu/human-resources/current-employees/benefits/health-and-welfare",
-                "https://www.oberlin.edu/human-resources/current-employees/benefits/retirement",
-                "https://www.oberlin.edu/human-resources/forms"
-            ],
-            "summary": "Oberlin College offers a comprehensive benefits package including health, dental, vision, life insurance, disability, and retirement plans. The primary provider for health insurance is Medical Mutual of Ohio. The retirement plan is a 403(b) plan administered by TIAA. There are also tuition benefits available."
+            "administrative_professional_staff": {
+                // ... A&PS data ...
+                general: {
+                    summary: "Benefits have a 31-day initial enrollment period from the date of hire.",
+                    contact: "Contact Human Resources at (440) 775-8430 for appointments or questions.",
+                    payroll: "Payroll is processed monthly, paid on the last working day of the month. Direct Deposit is required."
+                },
+                retirement: {
+                    plan_type: "The College offers a 403(b) retirement program through TIAA, with several components: Retirement Annuity (RA), Supplemental Retirement Annuity (SRA), and a ROTH 403(b) option.",
+                    college_contribution_RA: "After one year of service and attaining age 26, Oberlin makes automatic pre-tax contributions to the RA plan.",
+                    contribution_tiers_2025: {
+                        "title": "2025 Plan Year - College Contributions as a Percentage of Salary",
+                        "Age 26-34": "5% on all earnings.",
+                        "Age 35-44": "8% on all earnings.",
+                        "Age 45-54": "10% on the first $100,000 of earnings, and 8% on earnings above $100,000.",
+                        "Age 55+": "12% on the first $100,000 of earnings, and 8% on earnings above $100,000."
+                    },
+                    employee_contribution_SRA: "Employees can contribute to a pre-tax SRA upon hire via TIAA's website."
+                },
+                health: {
+                    plan_name: "Consumer Driven Health Plan (CDHP) with a Health Savings Account (HSA).",
+                    eligibility: "Must be in a position that is at least .5 FTE and for at least 9 months per year.",
+                    employee_cost: "The employee's cost is between 1.75% and 4.50% of salary.",
+                    hsa_college_contribution: "Oberlin contributes up to: $1,000/year for Single; $1,650/year for Employee + Spouse or Employee + Child; $2,000/year for Family.",
+                },
+                dental: {
+                    monthly_premiums: {
+                        "Superior Dental CORE": "Single: $27.16, Single+1: $54.43, Family: $99.33",
+                        "Superior Dental ENHANCED": "Single: $33.78, Single+1: $67.47, Family: $123.12",
+                        "Superior Network Only": "Single: $23.18, Single+1: $46.37, Family: $83.44"
+                    }
+                },
+                vision: {
+                    monthly_premiums: "Single: $7.06, Single+1: $14.12, Family: $19.42",
+                },
+                insurance: {
+                    basic_life_and_add: "Funded by the College, coverage of 1x annual earnings up to a maximum of $200,000.",
+                    supplemental_life: "Employee funded.",
+                    disability: "100% salary continuation for first 180 days. After that, Long-Term Disability (LTD) at 60% of salary. Not available for limited-term appointments."
+                },
+                pto: {
+                    accrual: "Full-time, 12-month employees accrue up to 280 hours (35 days) per fiscal year.",
+                    usage_restriction: "No PTO use within the first 45 days of employment.",
+                    carry_forward: "Max 120 hours (15 days) can be carried forward.",
+                    payout_on_departure: "Max payout of 160 hours (20 days) from current fiscal year's earnings."
+                },
+                tuition: {
+                    employee_remission: "One course (up to 5 hours) per semester, tuition-free.",
+                    spousal_remission: "One course per semester under same rules.",
+                    dependent_support: "Tuition remission for dependents at Oberlin/GLCA schools. For other schools, benefit up to 50% of Oberlin's tuition, subject to vesting."
+                }
+            },
+            "administrative_assistants": {
+                // ... Admin Assistants data ...
+                 general: {
+                    summary: "Benefits have a 31-day initial enrollment period. New employees must complete onboarding paperwork with HR.",
+                    contact: "Contact Human Resources for appointments or questions.",
+                    payroll: "Payroll is processed biweekly, paid every other Friday. Direct Deposit is required."
+                },
+                retirement: {
+                    plan_type: "The College offers a 403(b) retirement program through TIAA with a Retirement Annuity (RA) and Supplemental Retirement Annuity (SRA).",
+                    college_contribution_RA: "After one year of service and attaining age 26, Oberlin makes automatic pre-tax contributions based on a schedule.",
+                    employee_contribution_SRA: "Employees can contribute to a pre-tax SRA upon hire via TIAA's website or by contacting the TIAA representative."
+                },
+                health: {
+                    plan_name: "Consumer Driven Health Plan (CDHP) with a Health Savings Account (HSA).",
+                    employee_cost: "The employee's cost is between 1.75% and 4.50% of salary.",
+                    hsa_college_contribution: "Oberlin contributes up to: $1,500/year for Single; $2,250/year for Employee + Spouse or Employee + Child; $3,000/year for Family.",
+                    fsa_note: "Employees in an HSA are ineligible for a Medical FSA."
+                },
+                 fsa: {
+                    name: "Dependent Care Flexible Spending Account (FSA)",
+                    description: "Allows employees to set aside pre-tax money for dependent care expenses (children under 13 or elderly dependents)."
+                 },
+                dental: {
+                    provider: "Superior Dental, PPO plans.",
+                    plan_options: "Core, Enhanced, and Network-Only plans available.",
+                    monthly_premiums: {
+                        "SDC Core": "Single: $25.99, Single+1: $52.09, Family: $95.05",
+                        "SDC Enhanced": "Single: $32.33, Single+1: $64.56, Family: $117.82",
+                        "Network Only": "Single: $22.18, Single+1: $44.37, Family: $79.85"
+                    }
+                },
+                vision: {
+                    name: "Voluntary Vision Insurance",
+                    description: "Paid by employee, covers annual exam and glasses/contacts with a small deductible.",
+                    monthly_premiums: "Single: $6.92, Single+1: $13.84, Family: $19.04",
+                },
+                insurance: {
+                    basic_life_and_add: "Funded by the College, coverage of 1x annual earnings up to a maximum of $200,000.",
+                    supplemental_life: "Employee funded, for self and dependents.",
+                    disability: "Full or partial salary continues up to 180 days (after using accrued sick leave). After that, LTD at 60% of salary."
+                },
+                sick_leave: {
+                    accrual: "Full-time employees get 12 days per year, prorated for part-time. Can accrue up to 100 working days."
+                },
+                vacation: {
+                    accrual_schedule: "Vacation is accrued in the current year to be taken the next fiscal year.",
+                    accrual_tiers: {
+                        "After 1st and 2nd years": "10 days",
+                        "After 3rd and 4th years": "15 days",
+                        "After 5th year": "22 days"
+                    }
+                },
+                overtime: {
+                    rate: "1.5 times the hourly rate for hours over 37.5 per week.",
+                    comp_time: "Can take compensatory time off instead of pay, but must be used in the same pay period it was earned."
+                },
+                tuition: {
+                    employee_remission: "One course (up to 5 hours) per semester, tuition-free.",
+                    spousal_remission: "One course per semester under same rules.",
+                    dependent_support: "After two years of employment, tuition scholarship available for dependents. For non-Oberlin/GLCA schools, benefit is 20%-50% of Oberlin's tuition, subject to vesting."
+                }
+            },
+            "confidential_administrative_staff": {
+                // ... Confidential Staff data ...
+                 general: {
+                    summary: "Benefits have a 31-day initial enrollment period. New employees must complete onboarding paperwork with HR.",
+                    contact: "Contact Human Resources at (440) 775-8430.",
+                    payroll: "Payroll is processed monthly, paid on the last working day of the month. Direct Deposit is required."
+                },
+                retirement: {
+                    plan_type: "The College offers a 403(b) retirement program through TIAA, including RA, SRA, and ROTH options.",
+                    college_contribution_RA: "After one year of service and attaining age 26, Oberlin makes automatic pre-tax contributions.",
+                    contribution_tiers_2025: {
+                        "title": "2025 Plan Year - College Contributions as a Percentage of Salary",
+                        "Age 26-34": "5% on all earnings.",
+                        "Age 35-44": "8% on all earnings.",
+                        "Age 45-54": "10% on the first $100,000 of earnings, and 8% on earnings above $100,000.",
+                        "Age 55+": "12% on the first $100,000 of earnings, and 8% on earnings above $100,000."
+                    },
+                    employee_contribution_SRA: "Employees can contribute to a pre-tax SRA upon hire via TIAA's website."
+                },
+                health: {
+                    plan_name: "Consumer Driven Health Plan (CDHP) with a Health Savings Account (HSA).",
+                    employee_cost: "The employee's cost is between 1.75% and 4.50% of salary.",
+                    hsa_college_contribution: "Oberlin contributes up to: $1,000/year for Single; $1,650/year for Employee + Spouse or Child; $2,000/year for Family."
+                },
+                dental: {
+                    monthly_premiums: {
+                        "Superior Dental CORE": "Single: $27.16, Single+1: $54.43, Family: $99.33",
+                        "Superior Dental ENHANCED": "Single: $33.78, Single+1: $67.47, Family: $123.12",
+                        "Superior Network Only": "Single: $23.18, Single+1: $46.37, Family: $83.44"
+                    }
+                },
+                vision: {
+                    monthly_premiums: "Single: $7.06, Single+1: $14.12, Family: $19.42",
+                },
+                insurance: {
+                    basic_life_and_add: "Funded by the College, coverage of 1x annual earnings up to a maximum of $200,000.",
+                    supplemental_life: "Employee funded.",
+                    disability: "100% salary continuation for first 180 days. After that, Long-Term Disability (LTD) at 60% of salary. Not for limited-term appointments."
+                },
+                pto: {
+                    accrual: "Full-time, 12-month employees accrue up to 280 hours (35 days) per fiscal year.",
+                    usage_restriction: "No PTO use within the first 45 days of employment.",
+                    carry_forward: "Max 120 hours (15 days) can be carried forward.",
+                    payout_on_departure: "Max payout of 160 hours (20 days) from current fiscal year's earnings."
+                },
+                tuition: {
+                    employee_remission: "One course (up to 5 hours) per semester, tuition-free.",
+                    spousal_remission: "One course per semester under same rules.",
+                    dependent_support: "Tuition remission for dependents at Oberlin/GLCA schools. For other schools, benefit up to 50% of Oberlin's tuition, subject to vesting."
+                }
+            },
+            "continuing_faculty": {
+                // ... Continuing Faculty data ...
+                general: {
+                    summary: "Benefits have a 31-day initial enrollment period. New faculty must complete paperwork with HR.",
+                    contact: "Contact Human Resources at (440) 775-8430.",
+                    payroll: "Payroll is processed monthly on the last working day. Direct Deposit is required."
+                },
+                retirement: {
+                    plan_type: "403(b) retirement program through TIAA with RA, SRA, and ROTH options.",
+                    college_contribution_RA: "After one year of service and attaining age 26, Oberlin makes automatic pre-tax contributions.",
+                     contribution_tiers_2025: {
+                        "title": "2025 Plan Year - College Contributions as a Percentage of Salary",
+                        "Age 26-34": "5% on all earnings.",
+                        "Age 35-44": "8% on all earnings.",
+                        "Age 45-54": "10% on the first $100,000 of earnings, and 8% on earnings above $100,000.",
+                        "Age 55+": "12% on the first $100,000 of earnings, and 8% on earnings above $100,000."
+                    },
+                    employee_contribution_SRA: "Eligible to participate upon hire with pre-tax contributions."
+                },
+                health: {
+                    plan_name: "Consumer Driven Health Plan (CDHP) with a Health Savings Account (HSA).",
+                    employee_cost: "1.75% - 4.50% of salary.",
+                    hsa_college_contribution: "Up to $1,000/year for Single, $1,650 for Employee + Spouse/Child, and $2,000 for Family."
+                },
+                dental: {
+                     monthly_premiums: {
+                        "Superior Dental CORE": "Single: $27.16, Single+1: $54.43, Family: $99.33",
+                        "Superior Dental ENHANCED": "Single: $33.78, Single+1: $67.47, Family: $123.12",
+                        "Superior Network Only": "Single: $23.18, Single+1: $46.37, Family: $83.44"
+                    }
+                },
+                vision: {
+                     monthly_premiums: "Single: $7.06, Single+1: $14.12, Family: $19.42",
+                },
+                 insurance: {
+                    basic_life_and_add: "Funded by the College, coverage of 1x annual earnings up to a maximum of $200,000.",
+                    supplemental_life: "Employee funded.",
+                    disability: "100% salary continuation for first 180 days. After that, Long-Term Disability (LTD) at 60% of salary. Not for limited-term appointments."
+                },
+                tuition: {
+                    employee_remission: "One course (up to 5 hours) per semester, tuition-free, excluding private reading and Conservatory applied studies.",
+                    spousal_remission: "One course per semester under the same rules.",
+                    dependent_support: "Tuition remission for dependents at Oberlin/GLCA schools. For other schools, benefit up to 50% of Oberlin's tuition, subject to a vesting period."
+                },
+                 holidays: {
+                    observed_holidays: "Labor Day, Thanksgiving Day & day after, Christmas Day, New Year's Day, Martin Luther King Jr. Day, Juneteenth, Memorial Day, Independence Day.",
+                    additional_time_off: "The College also observes 'Fridays Off in July' and an annual 'winter shutdown' in late December."
+                }
+            },
+             "security_ocsa": {
+                general: {
+                    summary: "Benefits have a 31-day initial enrollment period. New employees must complete onboarding paperwork with HR.",
+                    contact: "Contact Human Resources for appointments or questions.",
+                    payroll: "Payroll is processed biweekly, paid on Friday. Direct Deposit is required."
+                },
+                retirement: {
+                    plan_type: "The College offers a 403(b) retirement program through TIAA with a Retirement Annuity (RA) and Supplemental Retirement Annuity (SRA).",
+                    college_contribution_RA: "After one year of service and attaining age 26, Oberlin makes automatic pre-tax contributions based on a schedule.",
+                    employee_contribution_SRA: "Employees can contribute to a pre-tax SRA upon hire via TIAA's website or by contacting the TIAA representative."
+                },
+                health: {
+                    plan_name: "Consumer Driven Health Plan (CDHP) with a Health Savings Account (HSA).",
+                    employee_cost: "The employee's cost is between 1.75% and 4.50% of salary.",
+                    hsa_college_contribution: "Oberlin contributes up to: $1,000/year for Single; $1,500/year for Employee + Spouse or Employee + Child; $2,000/year for Family."
+                },
+                fsa: {
+                    name: "Dependent Care Flexible Spending Account (FSA)",
+                    description: "Allows employees to set aside pre-tax money for dependent care expenses (children under 13 or elderly dependents)."
+                },
+                dental: {
+                    provider: "Superior Dental, PPO plans.",
+                    plan_options: "Core, Enhanced, and Network-Only plans available.",
+                    monthly_premiums: {
+                        "SDC Core": "Single: $25.99, Single+1: $52.09, Family: $95.05",
+                        "SDC Enhanced": "Single: $32.33, Single+1: $64.56, Family: $117.82",
+                        "SDC Network Only": "Single: $22.18, Single+1: $44.37, Family: $79.85"
+                    }
+                },
+                vision: {
+                    name: "Voluntary Vision Insurance",
+                    description: "Paid by employee, covers annual exam and glasses/contacts with a small deductible.",
+                    monthly_premiums: "Single: $6.92, Single+1: $13.84, Family: $19.04",
+                },
+                insurance: {
+                    basic_life_and_add: "Funded by the College, coverage of 1x annual earnings up to a maximum of $200,000.",
+                    supplemental_life: "Employee funded, for self and dependents.",
+                    disability: "After 10 consecutive working days of absence, pay continues at 60% for up to 6 months. After 6 months, must apply for Long-Term Disability (LTD) at 60% of salary."
+                },
+                sick_leave: {
+                    accrual: "Full-time employees are eligible for 14 sick leave days per year, 4 of which may be used as personal days."
+                },
+                vacation: {
+                    accrual_schedule: "Vacation is computed as of June 30 to be taken during the following fiscal year.",
+                    accrual_tiers: {
+                        "After 1 and 2 years": "10 working days (2 weeks)",
+                        "After 3 and 4 years": "15 working days (3 weeks)",
+                        "After 5 years": "20 working days (4 weeks)"
+                    }
+                },
+                tuition: {
+                    employee_remission: "One course (up to 5 hours) per semester, tuition-free.",
+                    dependent_support: "After five years of employment, tuition scholarship available for dependents. For non-Oberlin/GLCA schools, benefit is 20%-50% of Oberlin's tuition, subject to a vesting period."
+                }
+            },
+            "service_employees": {
+                 general: {
+                    summary: "Benefits have a 31-day initial enrollment period. New employees must complete onboarding paperwork with HR.",
+                    contact: "Contact Human Resources for appointments or questions.",
+                    payroll: "Payroll is processed biweekly, paid on Friday. Direct Deposit is required."
+                },
+                retirement: {
+                    plan_type: "The College offers a 403(b) retirement program through TIAA with a Retirement Annuity (RA) and Supplemental Retirement Annuity (SRA).",
+                    college_contribution_RA: "After one year of service and attaining age 26, Oberlin makes automatic pre-tax contributions based on a schedule.",
+                    employee_contribution_SRA: "Employees can contribute to a pre-tax SRA upon hire via TIAA's website or by contacting the TIAA representative.",
+                    sick_leave_conversion: "See Article 8.3 of the UAW contract regarding sick leave conversion contributions to retirement."
+                },
+                health: {
+                    plan_name: "Consumer Driven Health Plan (CDHP) with a Health Savings Account (HSA).",
+                    employee_cost: "1.75% - 4.50% of your gross bi-weekly salary.",
+                    hsa_college_contribution: "Oberlin contributes up to: $1,000/year for Single; $1,500/year for Employee + Spouse or Employee + Child; $2,000/year for Family."
+                },
+                fsa: {
+                    name: "Dependent Care Flexible Spending Account (FSA)",
+                    description: "Allows employees to set aside pre-tax money for dependent care expenses (children under 13 or elderly dependents)."
+                },
+                dental: {
+                    provider: "Superior Dental, PPO plans.",
+                    plan_options: "Core, Enhanced, and Network-Only plans available.",
+                    monthly_premiums: {
+                        "Superior Dental CORE": "Single: $25.99, Single+1: $52.09, Family: $95.05",
+                        "Superior Dental ENHANCED": "Single: $32.33, Single+1: $64.56, Family: $117.82",
+                        "Superior Dental NETWORK ONLY": "Single: $22.18, Single+1: $44.37, Family: $79.85"
+                    }
+                },
+                vision: {
+                    name: "Voluntary Vision Insurance",
+                    description: "Paid by employee, covers annual exam and glasses/contacts with a small deductible.",
+                    monthly_premiums: "Single: $6.92, Single+1: $13.84, Family: $19.04",
+                },
+                insurance: {
+                    basic_life_and_add: "Funded by the College, coverage of 1x annual earnings up to a maximum of $200,000.",
+                    supplemental_life: "Employee funded, for self and dependents.",
+                    disability: "After 10 consecutive working days of absence, pay continues at 60% for up to 6 months. After 6 months, must apply for Long-Term Disability (LTD) at 60% of salary."
+                },
+                sick_leave: {
+                    accrual: "On July 1st of each year, each employee will be eligible for 13 paid sick leave days per year; 3 of which may be used as personal days."
+                },
+                vacation: {
+                    accrual_schedule: "Vacation is computed as of June 30 to be taken during the following fiscal year.",
+                    accrual_tiers: {
+                        "Less than 6 months": "No vacation eligibility",
+                        "More than 6 months but less than 1 year": "1 week",
+                        "More than 1 but 5 or less years": "2 weeks",
+                        "More than 5 years": "4 weeks"
+                    }
+                },
+                tuition: {
+                    employee_remission: "One course (up to 5 hours) per semester, tuition-free.",
+                    spousal_tuition: "Spouses are eligible to take one course per semester.",
+                    dependent_support: "After five years of employment, tuition scholarship available for dependents. For non-Oberlin/GLCA schools, benefit is 20%-50% of Oberlin's tuition, subject to a vesting period."
+                }
+            }
         };
 
-        // Initialize chat with instructions and the first model response.
-        // The first message is a user message that sets the context and instructions for the model.
-        chatHistory.push({
-            role: "user",
-            parts: [{ text: `You are a specialized chatbot assistant for Oberlin College employee benefits. Your name is the "Employee Benefits Assistant". Your goal is to answer questions based *only* on the following context. Do not use any other knowledge.
+        const knowledgeString = JSON.stringify(knowledgeBase, null, 2);
 
-Context:
-- Summary of Benefits: ${knowledgeBase.summary}
-- Official HR Web Pages: ${knowledgeBase.sources.join("\n")}
+        const instructions = `You are an AI assistant for Oberlin College employees named the "Employee Benefits Assistant". Your task is to answer questions based *only* on the detailed knowledge base provided below, which is separated by employee class.
 
-Your instructions:
-1.  Answer user questions accurately based on the provided context.
-2.  If the answer cannot be found in the context, politely state that you do not have that information and suggest checking the official HR websites or contacting the HR department directly.
-3.  Keep your answers concise and helpful.
-4.  Do not make up information.
+        **Knowledge Base:**
+        ${knowledgeString}
 
-Start the conversation by greeting the user and introducing yourself.`}]
-        });
+        **Instructions:**
+        1.  **Clarify First:** If a user's question is ambiguous (e.g., "What is the PTO policy?"), you MUST first ask them to clarify their employee class: "To give you the most accurate information, could you please tell me your employee class? (e.g., A&PS, Administrative Assistant, Confidential Staff, Continuing Faculty, Security (OCSA), or Service Employee)"
+        2.  **Targeted Answers:** Once the class is known, answer based *only* on the information in that class's section of the knowledge base.
+        3.  **Be Specific:** When asked about pricing, premiums, or contribution amounts, provide the exact numbers from the knowledge base.
+        4.  **Handle Missing Info:** If a benefit (like PTO or sick leave) isn't mentioned for a specific employee class, state that the provided document for that class does not contain information on that topic.
+        5.  **Handle Unknowns:** If you cannot find the answer for a specific class, politely state that and suggest contacting HR at (440) 775-8430.`;
 
-        // The second message is the model's initial response, which is also displayed in the UI.
-        chatHistory.push({
-            role: "model",
-            parts: [{ text: "Hello! I'm the Oberlin College Benefits Assistant. I can help answer questions about employee benefits using publicly available information from the HR website. How can I help you today?" }]
-        });
-
+        chatHistory.push({ role: "user", parts: [{ text: instructions }] });
+        chatHistory.push({ role: "model", parts: [{ text: "Hello! I'm the Oberlin College Benefits Assistant. I can answer questions about benefits for A&PS, Administrative Assistants, Confidential Staff, Continuing Faculty, Security (OCSA), and Service Employees. How can I help you?" }] });
 
         chatForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const userMessage = userInput.value.trim();
             if (!userMessage) return;
 
-            // Add user message to UI
             appendMessage(userMessage, 'user');
             userInput.value = '';
 
-            // Show loading indicator
             loadingIndicator.style.display = 'block';
             chatContainer.scrollTop = chatContainer.scrollHeight;
 
             try {
-                // Add user message to history
                 chatHistory.push({ role: "user", parts: [{ text: userMessage }] });
 
-                // Construct payload for the Gemini API
                 const payload = { contents: chatHistory };
-                const apiKey = ""; // API key is handled by the environment
+                const apiKey = ""; 
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                 const response = await fetch(apiUrl, {
@@ -165,27 +470,21 @@ Start the conversation by greeting the user and introducing yourself.`}]
 
                 const result = await response.json();
                 
-                let botMessage = "I couldn't retrieve an answer at this moment. Please check the official HR website or contact HR directly.";
-                if (result.candidates && result.candidates.length > 0 &&
-                    result.candidates[0].content && result.candidates[0].content.parts &&
-                    result.candidates[0].content.parts.length > 0) {
+                let botMessage = "I couldn't retrieve an answer at this moment. Please try again or contact the HR department for more information.";
+                if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts[0].text) {
                     botMessage = result.candidates[0].content.parts[0].text;
                 } else {
                      console.warn("Unexpected API response structure:", result);
                 }
 
-
-                // Add bot response to history
                 chatHistory.push({ role: "model", parts: [{ text: botMessage }] });
                 
-                // Add bot message to UI
                 appendMessage(botMessage, 'bot');
 
             } catch (error) {
                 console.error('Error fetching from Gemini API:', error);
-                appendMessage('Sorry, I encountered an error while trying to find an answer. Please try again later.', 'bot');
+                appendMessage('Sorry, I encountered a technical error. Please try your question again.', 'bot');
             } finally {
-                // Hide loading indicator
                 loadingIndicator.style.display = 'none';
                 chatContainer.scrollTop = chatContainer.scrollHeight;
             }
@@ -194,12 +493,17 @@ Start the conversation by greeting the user and introducing yourself.`}]
         function appendMessage(message, sender) {
             const messageWrapper = document.createElement('div');
             
+            const formattedMessage = message
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/\n/g, '<br>');
+
             if (sender === 'user') {
                 messageWrapper.innerHTML = `
                     <div class="flex items-end justify-end gap-3">
                         <div>
                             <div class="bg-red-700 text-white p-4 rounded-lg rounded-br-none">
-                                <p class="text-sm">${message}</p>
+                                <p class="text-sm">${formattedMessage}</p>
                             </div>
                         </div>
                          <div class="bg-red-700 text-white p-2 rounded-full h-8 w-8 flex-shrink-0 flex items-center justify-center">
@@ -214,18 +518,16 @@ Start the conversation by greeting the user and introducing yourself.`}]
                         </div>
                         <div>
                             <div class="bg-gray-200 p-4 rounded-lg rounded-tl-none">
-                                <p class="text-sm text-gray-800">${message}</p>
+                                <p class="text-sm text-gray-800">${formattedMessage}</p>
                             </div>
                         </div>
                     </div>`;
             }
             
-            // This is a basic sanitization to prevent raw HTML injection
             const lastChild = messageWrapper.firstElementChild;
             chatContainer.querySelector('.space-y-4').appendChild(lastChild);
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
-
     </script>
 </body>
 </html>
