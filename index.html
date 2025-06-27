@@ -88,8 +88,6 @@
         const chatContainer = document.getElementById('chat-container');
         const loadingIndicator = document.getElementById('loading-indicator');
 
-        let chatHistory = [];
-        
         // Structured knowledge base with separate sections for each employee class
         const knowledgeBase = {
             "administrative_professional_staff": {
@@ -421,24 +419,118 @@
             }
         };
 
-        const knowledgeString = JSON.stringify(knowledgeBase, null, 2);
+        // --- Start of new, self-contained search logic ---
 
-        const instructions = `You are an AI assistant for Oberlin College employees named the "Employee Benefits Assistant". Your task is to answer questions based *only* on the detailed knowledge base provided below, which is separated by employee class.
+        const keywordMap = {
+            // Employee Class Keywords
+            "a&ps": "administrative_professional_staff",
+            "professional": "administrative_professional_staff",
+            "administrative assistant": "administrative_assistants",
+            "admin assistant": "administrative_assistants",
+            "confidential": "confidential_administrative_staff",
+            "faculty": "continuing_faculty",
+            "ocsa": "security_ocsa",
+            "security": "security_ocsa",
+            "service": "service_employees",
 
-        **Knowledge Base:**
-        ${knowledgeString}
+            // Topic Keywords
+            "payroll": "general",
+            "pay": "general",
+            "health": "health",
+            "medical": "health",
+            "insurance": "health",
+            "hsa": "health",
+            "fsa": "fsa",
+            "spending account": "fsa",
+            "retirement": "retirement",
+            "403b": "retirement",
+            "tiaa": "retirement",
+            "dental": "dental",
+            "vision": "vision",
+            "eye": "vision",
+            "life insurance": "insurance",
+            "disability": "insurance",
+            "pto": "pto",
+            "paid time off": "pto",
+            "vacation": "vacation",
+            "sick": "sick_leave",
+            "holidays": "holidays",
+            "tuition": "tuition",
+            "overtime": "overtime",
+        };
 
-        **Instructions:**
-        1.  **Clarify First:** If a user's question is ambiguous (e.g., "What is the PTO policy?"), you MUST first ask them to clarify their employee class: "To give you the most accurate information, could you please tell me your employee class? (e.g., A&PS, Administrative Assistant, Confidential Staff, Continuing Faculty, Security (OCSA), or Service Employee)"
-        2.  **Targeted Answers:** Once the class is known, answer based *only* on the information in that class's section of the knowledge base.
-        3.  **Be Specific:** When asked about pricing, premiums, or contribution amounts, provide the exact numbers from the knowledge base.
-        4.  **Handle Missing Info:** If a benefit (like PTO or sick leave) isn't mentioned for a specific employee class, state that the provided document for that class does not contain information on that topic.
-        5.  **Handle Unknowns:** If you cannot find the answer for a specific class, politely state that and suggest contacting HR at (440) 775-8430.`;
+        function searchKnowledgeBase(query) {
+            const lowerQuery = query.toLowerCase();
+            let foundClass = null;
+            let foundTopic = null;
 
-        chatHistory.push({ role: "user", parts: [{ text: instructions }] });
-        chatHistory.push({ role: "model", parts: [{ text: "Hello! I'm the Oberlin College Benefits Assistant. I can answer questions about benefits for A&PS, Administrative Assistants, Confidential Staff, Continuing Faculty, Security (OCSA), and Service Employees. How can I help you?" }] });
+            // Find employee class and topic keywords
+            for (const keyword in keywordMap) {
+                if (lowerQuery.includes(keyword)) {
+                    const mappedValue = keywordMap[keyword];
+                    if (knowledgeBase[mappedValue]) {
+                        foundClass = mappedValue;
+                    } else {
+                        foundTopic = mappedValue;
+                    }
+                }
+            }
 
-        chatForm.addEventListener('submit', async (e) => {
+            // If topic is ambiguous without a class, ask for clarification
+            const ambiguousTopics = ['pto', 'vacation', 'sick_leave', 'tuition', 'retirement'];
+            if (ambiguousTopics.includes(foundTopic) && !foundClass) {
+                 return "To give you the most accurate information, could you please tell me your employee class? (e.g., A&PS, Administrative Assistant, Confidential Staff, Continuing Faculty, Security (OCSA), or Service Employee)";
+            }
+
+            // If no class is specified, but topic is not ambiguous, search all
+             if (foundTopic && !foundClass) {
+                let results = `I found information on "${foundTopic}" for the following employee classes:\n\n`;
+                let found = false;
+                for (const empClass in knowledgeBase) {
+                    if (knowledgeBase[empClass][foundTopic]) {
+                        found = true;
+                        const className = empClass.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                        results += `**For ${className}:**\n${formatObject(knowledgeBase[empClass][foundTopic])}\n\n`;
+                    }
+                }
+                return found ? results : `I could not find any information about "${query}". Please try rephrasing your question or contact HR.`;
+            }
+
+
+            // If class is specified, return the info for that topic
+            if (foundClass && foundTopic) {
+                if (knowledgeBase[foundClass] && knowledgeBase[foundClass][foundTopic]) {
+                    return `**For ${foundClass.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:**\n${formatObject(knowledgeBase[foundClass][foundTopic])}`;
+                }
+            }
+            
+            // If only a class is mentioned, return general info for that class
+            if (foundClass && !foundTopic) {
+                 return `**General Information for ${foundClass.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:**\n${formatObject(knowledgeBase[foundClass].general)}`;
+            }
+
+            return `I'm sorry, I couldn't find specific information for your query. Please try asking about a specific topic (like 'dental' or 'retirement') and mention your employee class.`;
+        }
+
+        function formatObject(obj) {
+            if (typeof obj === 'string') {
+                return obj;
+            }
+            let result = '';
+            for (const key in obj) {
+                const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                if(typeof obj[key] === 'object' && obj[key] !== null) {
+                     result += `**${formattedKey}:**\n${formatObject(obj[key])}\n`;
+                } else {
+                    result += `* **${formattedKey}:** ${obj[key]}\n`;
+                }
+            }
+            return result;
+        }
+        
+        // --- End of new, self-contained search logic ---
+
+        chatForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const userMessage = userInput.value.trim();
             if (!userMessage) return;
@@ -449,45 +541,14 @@
             loadingIndicator.style.display = 'block';
             chatContainer.scrollTop = chatContainer.scrollHeight;
 
-            try {
-                chatHistory.push({ role: "user", parts: [{ text: userMessage }] });
-
-                const payload = { contents: chatHistory };
-                const apiKey = ""; 
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                
-                if (!response.ok) {
-                    const errorBody = await response.text();
-                    console.error("API Error Response:", errorBody);
-                    throw new Error(`API request failed with status ${response.status}`);
-                }
-
-                const result = await response.json();
-                
-                let botMessage = "I couldn't retrieve an answer at this moment. Please try again or contact the HR department for more information.";
-                if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts[0].text) {
-                    botMessage = result.candidates[0].content.parts[0].text;
-                } else {
-                     console.warn("Unexpected API response structure:", result);
-                }
-
-                chatHistory.push({ role: "model", parts: [{ text: botMessage }] });
-                
+            // Simulate thinking time and then run local search
+            setTimeout(() => {
+                const botMessage = searchKnowledgeBase(userMessage);
                 appendMessage(botMessage, 'bot');
-
-            } catch (error) {
-                console.error('Error fetching from Gemini API:', error);
-                appendMessage('Sorry, I encountered a technical error. Please try your question again.', 'bot');
-            } finally {
+                
                 loadingIndicator.style.display = 'none';
                 chatContainer.scrollTop = chatContainer.scrollHeight;
-            }
+            }, 500); // 0.5 second delay
         });
 
         function appendMessage(message, sender) {
