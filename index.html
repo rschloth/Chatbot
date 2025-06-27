@@ -103,11 +103,31 @@
             "summary": "Oberlin College offers a comprehensive benefits package including health, dental, vision, life insurance, disability, and retirement plans. The primary provider for health insurance is Medical Mutual of Ohio. The retirement plan is a 403(b) plan administered by TIAA. There are also tuition benefits available."
         };
 
-        // Initialize with a system message
+        // Initialize chat with instructions and the first model response.
+        // The first message is a user message that sets the context and instructions for the model.
         chatHistory.push({
-            role: "system",
-            parts: [{ text: `You are a helpful assistant for Oberlin College employees. Answer questions based on the following information. Context: ${knowledgeBase.summary}. Relevant HR pages: ${knowledgeBase.sources.join(", ")}. Use this information to answer user questions. If the answer isn't in the context, state that you are searching the provided URLs for more information.`}]
+            role: "user",
+            parts: [{ text: `You are a specialized chatbot assistant for Oberlin College employee benefits. Your name is the "Employee Benefits Assistant". Your goal is to answer questions based *only* on the following context. Do not use any other knowledge.
+
+Context:
+- Summary of Benefits: ${knowledgeBase.summary}
+- Official HR Web Pages: ${knowledgeBase.sources.join("\n")}
+
+Your instructions:
+1.  Answer user questions accurately based on the provided context.
+2.  If the answer cannot be found in the context, politely state that you do not have that information and suggest checking the official HR websites or contacting the HR department directly.
+3.  Keep your answers concise and helpful.
+4.  Do not make up information.
+
+Start the conversation by greeting the user and introducing yourself.`}]
         });
+
+        // The second message is the model's initial response, which is also displayed in the UI.
+        chatHistory.push({
+            role: "model",
+            parts: [{ text: "Hello! I'm the Oberlin College Benefits Assistant. I can help answer questions about employee benefits using publicly available information from the HR website. How can I help you today?" }]
+        });
+
 
         chatForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -138,6 +158,8 @@
                 });
                 
                 if (!response.ok) {
+                    const errorBody = await response.text();
+                    console.error("API Error Response:", errorBody);
                     throw new Error(`API request failed with status ${response.status}`);
                 }
 
