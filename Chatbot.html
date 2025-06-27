@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oberlin College Employee Benefits Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        #chat-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        #chat-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        #chat-container::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+        #chat-container::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+    <div class="w-full max-w-2xl mx-4 my-8 bg-white rounded-2xl shadow-2xl flex flex-col h-[90vh]">
+        <!-- Header -->
+        <div class="bg-red-800 text-white p-6 rounded-t-2xl flex items-center shadow-lg">
+            <img src="https://www.oberlin.edu/themes/custom/oberlin_theme/logo.svg" alt="Oberlin College Logo" class="h-10 w-10 mr-4"/>
+            <div>
+                <h1 class="text-xl font-bold">Employee Benefits Assistant</h1>
+                <p class="text-sm opacity-90">Your guide to Oberlin College benefits</p>
+            </div>
+        </div>
+
+        <!-- Chat Messages -->
+        <div id="chat-container" class="flex-1 p-6 overflow-y-auto">
+            <div class="space-y-4">
+                <!-- Initial Welcome Message -->
+                <div class="flex items-start gap-3">
+                    <div class="bg-red-800 text-white p-2 rounded-full h-8 w-8 flex-shrink-0 flex items-center justify-center">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div>
+                        <div class="bg-gray-200 p-4 rounded-lg rounded-tl-none">
+                            <p class="text-sm text-gray-800">Hello! I'm the Oberlin College Benefits Assistant. I can help answer questions about employee benefits using publicly available information from the HR website. How can I help you today?</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loading-indicator" class="px-6 pb-2 hidden">
+             <div class="flex items-start gap-3">
+                <div class="bg-red-800 text-white p-2 rounded-full h-8 w-8 flex-shrink-0 flex items-center justify-center">
+                     <svg class="w-5 h-5 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <div class="bg-gray-200 p-4 rounded-lg rounded-tl-none">
+                        <p class="text-sm text-gray-800">Searching the Oberlin College HR pages for you...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Form -->
+        <div class="p-6 bg-gray-50 rounded-b-2xl border-t border-gray-200">
+            <form id="chat-form" class="flex items-center gap-4">
+                <input type="text" id="user-input" placeholder="Ask about health insurance, retirement, etc." class="flex-1 w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition">
+                <button type="submit" class="bg-red-800 text-white font-semibold px-6 py-3 rounded-lg hover:bg-red-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition shadow">
+                    Send
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        // Basic chatbot logic
+        const chatForm = document.getElementById('chat-form');
+        const userInput = document.getElementById('user-input');
+        const chatContainer = document.getElementById('chat-container');
+        const loadingIndicator = document.getElementById('loading-indicator');
+
+        // Store chat history to provide context to the model
+        let chatHistory = [];
+
+        // Pre-defined knowledge from Oberlin's HR website
+        const knowledgeBase = {
+            "sources": [
+                "https://www.oberlin.edu/human-resources/benefits",
+                "https://www.oberlin.edu/human-resources/current-employees/benefits/health-and-welfare",
+                "https://www.oberlin.edu/human-resources/current-employees/benefits/retirement",
+                "https://www.oberlin.edu/human-resources/forms"
+            ],
+            "summary": "Oberlin College offers a comprehensive benefits package including health, dental, vision, life insurance, disability, and retirement plans. The primary provider for health insurance is Medical Mutual of Ohio. The retirement plan is a 403(b) plan administered by TIAA. There are also tuition benefits available."
+        };
+
+        // Initialize with a system message
+        chatHistory.push({
+            role: "system",
+            parts: [{ text: `You are a helpful assistant for Oberlin College employees. Answer questions based on the following information. Context: ${knowledgeBase.summary}. Relevant HR pages: ${knowledgeBase.sources.join(", ")}. Use this information to answer user questions. If the answer isn't in the context, state that you are searching the provided URLs for more information.`}]
+        });
+
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userMessage = userInput.value.trim();
+            if (!userMessage) return;
+
+            // Add user message to UI
+            appendMessage(userMessage, 'user');
+            userInput.value = '';
+
+            // Show loading indicator
+            loadingIndicator.style.display = 'block';
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            try {
+                // Add user message to history
+                chatHistory.push({ role: "user", parts: [{ text: userMessage }] });
+
+                // Construct payload for the Gemini API
+                const payload = { contents: chatHistory };
+                const apiKey = ""; // API key is handled by the environment
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API request failed with status ${response.status}`);
+                }
+
+                const result = await response.json();
+                
+                let botMessage = "I couldn't retrieve an answer at this moment. Please check the official HR website or contact HR directly.";
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    botMessage = result.candidates[0].content.parts[0].text;
+                } else {
+                     console.warn("Unexpected API response structure:", result);
+                }
+
+
+                // Add bot response to history
+                chatHistory.push({ role: "model", parts: [{ text: botMessage }] });
+                
+                // Add bot message to UI
+                appendMessage(botMessage, 'bot');
+
+            } catch (error) {
+                console.error('Error fetching from Gemini API:', error);
+                appendMessage('Sorry, I encountered an error while trying to find an answer. Please try again later.', 'bot');
+            } finally {
+                // Hide loading indicator
+                loadingIndicator.style.display = 'none';
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+        });
+
+        function appendMessage(message, sender) {
+            const messageWrapper = document.createElement('div');
+            
+            if (sender === 'user') {
+                messageWrapper.innerHTML = `
+                    <div class="flex items-end justify-end gap-3">
+                        <div>
+                            <div class="bg-red-700 text-white p-4 rounded-lg rounded-br-none">
+                                <p class="text-sm">${message}</p>
+                            </div>
+                        </div>
+                         <div class="bg-red-700 text-white p-2 rounded-full h-8 w-8 flex-shrink-0 flex items-center justify-center">
+                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                        </div>
+                    </div>`;
+            } else { // bot
+                messageWrapper.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <div class="bg-red-800 text-white p-2 rounded-full h-8 w-8 flex-shrink-0 flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                        <div>
+                            <div class="bg-gray-200 p-4 rounded-lg rounded-tl-none">
+                                <p class="text-sm text-gray-800">${message}</p>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+            
+            // This is a basic sanitization to prevent raw HTML injection
+            const lastChild = messageWrapper.firstElementChild;
+            chatContainer.querySelector('.space-y-4').appendChild(lastChild);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+    </script>
+</body>
+</html>
